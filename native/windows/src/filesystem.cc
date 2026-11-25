@@ -1,9 +1,12 @@
 #include "authority.hpp"
+#include "private_dacl.hpp"
 #include <sddl.h>
 #include <winternl.h>
 #include <cstddef>
 
 namespace rea {
+
+static_assert(kPrivateDaclAccessDenied == ERROR_ACCESS_DENIED);
 
 static std::wstring hex(const unsigned char* bytes, size_t count) {
   constexpr wchar_t digits[] = L"0123456789abcdef";
@@ -251,8 +254,14 @@ static void verifyPrivate(HANDLE handle, const std::wstring& path, bool root) {
   require(GetSecurityDescriptorControl(raw, &control, &revision), "Read DACL control flags failed", path);
   require(acl != nullptr && (control & SE_DACL_PRESENT) != 0 && (!root || (control & SE_DACL_PROTECTED) != 0),
           "Private object requires a present protected DACL", path, ERROR_ACCESS_DENIED);
-  require(acl->AceCount == 2, "Private DACL contains unexpected trustees", path, ERROR_ACCESS_DENIED);
-  bool user = false, system = false;
+  PrivateDaclTrusteeVerifier trustees({
+      acl != nullptr,
+      acl == nullptr ? 0u : static_cast<std::uint32_t>(acl->AceCount),
+      (control & SE_DACL_PROTECTED) != 0,
+      EqualSid(expected.userSid(), expected.system.data()) != FALSE,
+  });
+  if (const auto countOutcome = trustees.verifyAceCount(); !countOutcome.ok)
+    throw Failure(countOutcome.constraint, path, countOutcome.win32Code);
   for (DWORD index = 0; index < acl->AceCount; ++index) {
     void* rawAce;
     require(GetAce(acl, index, &rawAce), "Read private DACL entry failed", path);
@@ -263,11 +272,16 @@ static void verifyPrivate(HANDLE handle, const std::wstring& path, bool root) {
                       (OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE)),
             "Private DACL contains unsupported rights or ACE type", path, ERROR_ACCESS_DENIED);
     PSID sid = const_cast<DWORD*>(&ace->SidStart);
-    if (EqualSid(sid, expected.userSid())) user = true;
-    else if (EqualSid(sid, expected.system.data())) system = true;
-    else throw Failure("Private DACL permits an unrelated principal", path, ERROR_ACCESS_DENIED);
+    const auto principal = EqualSid(sid, expected.userSid())
+                               ? PrivateDaclPrincipal::CurrentUser
+                               : EqualSid(sid, expected.system.data())
+                                     ? PrivateDaclPrincipal::System
+                                     : PrivateDaclPrincipal::Unrelated;
+    if (const auto step = trustees.observePrincipal(principal); !step.ok)
+      throw Failure(step.constraint, path, step.win32Code);
   }
-  require(user && system, "Private DACL must allow only current user and SYSTEM", path, ERROR_ACCESS_DENIED);
+  if (const auto done = trustees.finish(); !done.ok)
+    throw Failure(done.constraint, path, done.win32Code);
 }
 
 static std::unique_ptr<File> openPrivateBridgeDirectory(const std::wstring& path) {
