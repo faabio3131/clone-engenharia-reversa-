@@ -103,6 +103,7 @@ The [REA website](https://rea.tools/) has worked examples and product pages.
 ## Firmware
 
 - [Firmware analysis](guides/firmware/firmware-analysis.md)
+- [Non-MMIO hardware instruction channels](guides/firmware/hardware-instruction-channels.md)
 - [Android OTA update payloads](guides/firmware/android-ota-payload.md)
 - [Flattened devicetree inspection](devicetree.md)
 - [ESP flash images](esp-flash-image.md)
