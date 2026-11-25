@@ -17,6 +17,7 @@ import { recognizeAndroidOtaPayload } from "./firmware/androidOtaPayload.js";
 import { hasUImageMagic } from "./uimageFormat.js";
 import { hasUnityFsHeader } from "./unityfsFormat.js";
 import { hasMftFileRecordHeader } from "./windows/ntfsMft.js";
+import { hasSystemdJournalHeader } from "./linux/systemdJournal.js";
 import { hasWindowsShortcutHeader } from "./windows/windowsShortcutHeader.js";
 import { BinaryFormatFailure } from "./binaryContainer.js";
 import {
@@ -60,6 +61,7 @@ export type RecognizedArtifactFormat = Extract<
   | "esp-image"
   | "fit"
   | "ntfs-mft"
+  | "systemd-journal"
   | "plist"
   | StandaloneArtifactFormat
 >;
@@ -228,6 +230,7 @@ export const ARTIFACT_FORMAT_RECOGNIZERS: readonly ArtifactFormatRecognizer[] =
     },
     when("fit", hasFitImagesNode),
     when("ntfs-mft", hasMftFileRecordHeader),
+    when("systemd-journal", hasSystemdJournalHeader),
     when("sqlite", hasSqliteHeader),
     when("windows-shortcut", hasWindowsShortcutHeader),
     // Only a pinned CPython magic claims the format; a CR LF trailer alone

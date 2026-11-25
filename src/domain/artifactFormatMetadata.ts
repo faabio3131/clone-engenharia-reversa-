@@ -43,6 +43,7 @@ import {
   iso9660EntryMetadataSchema,
   iso9660MetadataSchema,
   ntfsMftMetadataSchema,
+  systemdJournalMetadataSchema,
 } from "./formatMetadata/androidAndSystemMetadata.js";
 import {
   ddsMetadataSchema,
@@ -82,6 +83,7 @@ export const artifactFormatMetadataSchema = z.discriminatedUnion("kind", [
   uf2MetadataSchema,
   uf2RegionMetadataSchema,
   ntfsMftMetadataSchema,
+  systemdJournalMetadataSchema,
   dfuSeMetadataSchema,
   dfuSeElementMetadataSchema,
   espFlashImageMetadataSchema,
@@ -284,6 +286,10 @@ const declarationsByKind: {
   "ntfs-mft": {
     notCompared:
       "Its fields come from the file's own FILE record headers and resident file-name attributes, which content comparison covers.",
+  },
+  "systemd-journal": {
+    notCompared:
+      "Its fields come from the file's own header and object headers, which content comparison covers.",
   },
   dfuse: {
     notCompared:
