@@ -84,7 +84,7 @@ export const parseDevicetree = (
     if (decodedBytes > DEVICETREE_DECODED_BYTES)
       throw devicetreeLimitFailure("decoded_bytes", DEVICETREE_DECODED_BYTES);
   };
-  const reservations: Devicetree["reservations"] = [];
+  const reservations: { offset: number; address: bigint; size: bigint }[] = [];
   let cursor = header.off_mem_rsvmap;
   for (;;) {
     if (cursor > reservationEnd - 16)
@@ -96,11 +96,18 @@ export const parseDevicetree = (
     if (reservations.length >= input.max_properties)
       throw devicetreeLimitFailure("max_properties", input.max_properties);
     admit(128);
-    reservations.push({
-      offset: cursor - 16,
-      address: hex(address),
-      size: hex(size),
-    });
+    reservations.push({ offset: cursor - 16, address, size });
+  }
+  // DTSpec 5.3.2 disallows overlap. Sort a copy to keep the report in file
+  // order, and keep interval arithmetic exact even above 2^53.
+  let reservationEndAddress = 0n;
+  for (const { address, size } of reservations.toSorted((left, right) =>
+    left.address < right.address ? -1 : left.address > right.address ? 1 : 0,
+  )) {
+    if (size === 0n) continue;
+    if (address < reservationEndAddress)
+      malformed("Overlapping FDT memory reservations");
+    reservationEndAddress = address + size;
   }
   const text = (
     start: number,
@@ -388,7 +395,11 @@ export const parseDevicetree = (
   const report: Devicetree = {
     artifact,
     header,
-    reservations,
+    reservations: reservations.map(({ offset, address, size }) => ({
+      offset,
+      address: hex(address),
+      size: hex(size),
+    })),
     nodes,
     references,
     summary: {
