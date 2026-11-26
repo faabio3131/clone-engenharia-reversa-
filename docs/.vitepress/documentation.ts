@@ -519,6 +519,11 @@ export const documentationSections = [
         route: "/wxapkg",
       },
       {
+        text: "Android binary XML (AXML)",
+        source: "axml.md",
+        route: "/axml",
+      },
+      {
         text: "ISO 9660 disc images",
         source: "guides/firmware/iso9660-images.md",
         route: "/iso9660-images",
