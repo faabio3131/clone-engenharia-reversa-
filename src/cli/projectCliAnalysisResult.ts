@@ -15,6 +15,11 @@ import {
   renderInputSchemaRemediation,
   type InputSchemaRemediationSpelling,
 } from "../domain/analysisErrorPresentation.js";
+import {
+  adjustableBudgetRefusalSchema,
+  adjustableBudgetRemediation,
+  MCP_PER_CALL_CONTROL_SPELLING,
+} from "../domain/analysisRefusal.js";
 import type { Result } from "../domain/result.js";
 import {
   cliCommandForOperation,
@@ -174,7 +179,13 @@ const projectErrorRecord = (
   );
   const remediation =
     cliTargetFailureRemediation(error, details, context) ??
-    cliInputSchemaRemediation(error, details, context);
+    cliInputSchemaRemediation(error, details, context) ??
+    cliAdjustableBudgetRemediation(
+      error,
+      details,
+      limit ?? details.limit,
+      context,
+    );
   if (
     limit === undefined &&
     relatedFlags === undefined &&
@@ -387,6 +398,61 @@ const cliInputSchemaRemediation = (
         ...remediation,
         action: `${remediation.action.slice(0, index)}${cli}${remediation.action.slice(index + mcp.length)}`,
       };
+};
+
+/**
+ * An adjustable-budget refusal's recovery in CLI spelling: the flag that sets
+ * the control on the command that runs the refused operation, or the whole
+ * field's option that carries it. The recovery is re-rendered from the parsed
+ * `details.refusal` facts, and replaced only when the action begins with
+ * that rendering, so authored recovery and appended guidance stay intact.
+ */
+const cliAdjustableBudgetRemediation = (
+  error: Record<string, JsonValue>,
+  details: Record<string, JsonValue>,
+  limit: JsonValue | undefined,
+  context: CliCommandOutputProjectionContext,
+): Record<string, JsonValue> | undefined => {
+  const { remediation } = error;
+  const parsed = adjustableBudgetRefusalSchema.safeParse(details.refusal);
+  if (
+    !parsed.success ||
+    !isObject(remediation) ||
+    typeof remediation.action !== "string" ||
+    !isObject(limit) ||
+    typeof limit.cli_flag !== "string" ||
+    limit.parameter !== parsed.data.control
+  )
+    return undefined;
+  const facts = parsed.data;
+  const { action } = remediation;
+  const lifetime = (["invocation", "continuing"] as const).find((candidate) =>
+    action.startsWith(adjustableBudgetRemediation(facts, candidate)),
+  );
+  if (lifetime === undefined) return undefined;
+  const mcp = adjustableBudgetRemediation(facts, lifetime);
+  const flag = limit.cli_flag;
+  // A member set through its whole field's JSON option keeps its path.
+  const memberFlag = orderedOperations(
+    context.operations,
+    facts.operation,
+  ).some(({ flags }) => flags[facts.control] === flag);
+  const command = cliCommandForOperation(
+    facts.operation,
+    context.commands,
+    context.cliName ?? "rea",
+    context.recordedCommands,
+  );
+  const cli = adjustableBudgetRemediation(facts, lifetime, {
+    parameter: (parameter) => (memberFlag ? flag : `${parameter} (in ${flag})`),
+    call:
+      command === undefined
+        ? MCP_PER_CALL_CONTROL_SPELLING.call
+        : () => `the next ${command} run`,
+  });
+  return cli === mcp
+    ? undefined
+    : { ...remediation, action: `${cli}${action.slice(mcp.length)}` };
 };
 
 const projectedSecondaryFailures = (
