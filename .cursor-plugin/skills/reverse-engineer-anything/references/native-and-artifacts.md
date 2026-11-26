@@ -974,6 +974,14 @@ stored. The v4 signature and any AVB footer are reported with sizes and are
 not verified. Extract `dtb` and pass that file to `inspect_devicetree`. See
 [Android boot images](https://github.com/morluto/rea/blob/main/docs/android-boot-image.md).
 
+Android sparse images (`0xed26ff3a` little-endian `simg`, format
+`android-sparse-image`) use `inspect_artifact` / `extract_artifact` to report
+header fields, declared unsparsed output size, and `RAW`/`FILL`/`DONT_CARE`/
+`CRC32` chunk summaries without expanding gigabytes of zero or fill blocks.
+Only stored `RAW` chunk slices are exposed for hashing or extraction;
+checksums stay unverified. See
+[Android sparse images](https://github.com/morluto/rea/blob/main/docs/android-sparse-image.md).
+
 ISO 9660 disc images (`CD001` at sector 16, any filename, even `.hop`) use
 the same inspection and extraction workflows on every host, without mounting.
 Volume identifiers and dates are target-derived. One tree is walked: an

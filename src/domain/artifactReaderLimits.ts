@@ -93,6 +93,16 @@ export const iso9660ReaderLimitsSchema = z.strictObject({
 });
 export type Iso9660ReaderLimits = z.output<typeof iso9660ReaderLimitsSchema>;
 
+export const DEFAULT_ANDROID_SPARSE_READER_LIMITS = {
+  chunk_count: 65_536,
+};
+export const androidSparseReaderLimitsSchema = z.strictObject({
+  chunk_count: count,
+});
+export type AndroidSparseReaderLimits = z.output<
+  typeof androidSparseReaderLimitsSchema
+>;
+
 /** Input selections preserve omission; only the producing operation resolves defaults. */
 export const artifactReaderLimitsInputSchema = z.strictObject({
   bun: z
@@ -179,6 +189,15 @@ export const artifactReaderLimitsInputSchema = z.strictObject({
     .describe(
       `ISO 9660 admission; omitted fields use ${JSON.stringify(DEFAULT_ISO9660_READER_LIMITS)}. Descriptor count bounds the volume descriptor set; directory depth, record count, directory bytes and path bytes bound directory-tree traversal.`,
     ),
+  android_sparse: z
+    .strictObject({
+      chunk_count:
+        androidSparseReaderLimitsSchema.shape.chunk_count.exactOptional(),
+    })
+    .exactOptional()
+    .describe(
+      `Android sparse admission; omitted fields use ${JSON.stringify(DEFAULT_ANDROID_SPARSE_READER_LIMITS)}. Chunk count bounds total chunks walked from the sparse header.`,
+    ),
   expanded_bytes: bytes
     .exactOptional()
     .describe(
@@ -194,9 +213,21 @@ export const artifactReaderLimitsSchema = z.strictObject({
   node_sea: nodeSeaReaderLimitsSchema,
   godot: godotReaderLimitsSchema,
   iso9660: iso9660ReaderLimitsSchema,
+  android_sparse: androidSparseReaderLimitsSchema,
   expanded_bytes: bytes.exactOptional(),
 });
 export type ArtifactReaderLimits = z.output<typeof artifactReaderLimitsSchema>;
+
+/**
+ * Recorded `effective_limits` schema for persisted or returned Evidence:
+ * accepts unchanged historical records lacking `android_sparse` without
+ * inventing or defaulting a limit they never recorded.
+ */
+export const recordedArtifactReaderLimitsSchema =
+  artifactReaderLimitsSchema.extend({
+    iso9660: iso9660ReaderLimitsSchema.exactOptional(),
+    android_sparse: androidSparseReaderLimitsSchema.exactOptional(),
+  });
 
 export const resolveArtifactReaderLimits = (
   selected?: ArtifactReaderLimitsInput,
@@ -209,6 +240,10 @@ export const resolveArtifactReaderLimits = (
   node_sea: { ...DEFAULT_NODE_SEA_READER_LIMITS, ...selected?.node_sea },
   godot: { ...DEFAULT_GODOT_READER_LIMITS, ...selected?.godot },
   iso9660: { ...DEFAULT_ISO9660_READER_LIMITS, ...selected?.iso9660 },
+  android_sparse: {
+    ...DEFAULT_ANDROID_SPARSE_READER_LIMITS,
+    ...selected?.android_sparse,
+  },
   ...(selected?.expanded_bytes === undefined
     ? {}
     : { expanded_bytes: selected.expanded_bytes }),

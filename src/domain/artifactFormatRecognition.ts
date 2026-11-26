@@ -1,5 +1,6 @@
 import type { ArtifactFormatId } from "./artifactGraph.js";
 import { hasAndroidBootImageMagic } from "./androidBootImageFormat.js";
+import { hasAndroidSparseImageMagic } from "./androidSparseImageFormat.js";
 import { hasBinaryPlistSignature } from "./apple/appleArchiveFormat.js";
 import { hasDfuSePrefix, isDfuSeFile } from "./firmware/dfuse.js";
 import { ESP8266_REFUSAL, recognizeEspImage } from "./firmware/espImage.js";
@@ -51,6 +52,7 @@ export type RecognizedArtifactFormat = Extract<
   | "uimage"
   | "android-boot-image"
   | "android-ota-payload"
+  | "android-sparse-image"
   | "iso9660"
   | "intel-hex"
   | "srec"
@@ -182,6 +184,7 @@ export const ARTIFACT_FORMAT_RECOGNIZERS: readonly ArtifactFormatRecognizer[] =
             reason: ota.reason,
           };
     },
+    when("android-sparse-image", hasAndroidSparseImageMagic),
     ({ prefix }) => {
       const format = detectHexRecordEncoding(prefix);
       return format === undefined ? undefined : { state: "recognized", format };
