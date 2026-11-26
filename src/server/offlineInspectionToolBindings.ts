@@ -34,6 +34,7 @@ import type { PythonPycService } from "../application/python/PythonPycService.js
 import type { ReleaseExposureService } from "../application/releaseExposure/ReleaseExposureService.js";
 import type { RustBinaryService } from "../application/rust/RustBinaryService.js";
 import type { SqliteDatabaseService } from "../application/sqlite/SqliteDatabaseService.js";
+import type { UnrealPakService } from "../application/unreal/UnrealPakService.js";
 import type { V8CodeCacheService } from "../application/v8CodeCache/V8CodeCacheService.js";
 import type { WasmArtifactService } from "../application/wasm/WasmArtifactService.js";
 import { compareWasmInterfaces } from "../application/wasm/WasmInterfaceComparisonService.js";
@@ -224,6 +225,12 @@ export const OFFLINE_INSPECTION_TOOL_BINDINGS = {
       summary: (input, options) => service.inspect(input, options),
     },
   })) satisfies Bind<BeamService>,
+  unrealPak: ((service, retention) => ({
+    inspect_unreal_pak: {
+      admission: "application",
+      run: (input, options) => service.inspect(input, options, retention),
+    },
+  })) satisfies Bind<UnrealPakService>,
   v8CodeCache: ((service) => ({
     inspect_v8_code_cache: {
       admission: "sdk",
