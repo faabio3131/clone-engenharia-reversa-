@@ -143,6 +143,7 @@ export interface SetupClient {
     | "fx"
     | "goose"
     | "kilo"
+    | "mimo"
     | "unsupported";
 }
 
@@ -1201,6 +1202,26 @@ export const SUPPORTED_CLIENT_DEFINITIONS = [
     discoveryPaths: kiloDiscoveryPaths,
     layeredLocation: kiloLayeredLocation,
     format: "kilo",
+  }),
+  defineClient({
+    name: "mimo",
+    mcpAdd: {
+      aliases: ["mimocode", "mimo-code"],
+      projectPaths: [".mimocode/mimocode.jsonc", ".mimocode/mimocode.json"],
+    },
+    registrationConnection: {
+      kind: "flat",
+      fields: ["url"],
+      stdio: [{ kind: "required-enum", field: "type", values: ["local"] }],
+    },
+    displayName: "MiMo Code",
+    // MiMo Code documents its personal files under `~/.config/mimocode`, so the user
+    // config follows the XDG root with `mimocode.jsonc` as the file name.
+    configPath: ({ home, env }: ClientPathContext) =>
+      join(xdgConfigHomeOrDefault({ home, env }), "mimocode", "mimocode.jsonc"),
+    markerPath: ({ home, env }: ClientPathContext) =>
+      join(xdgConfigHomeOrDefault({ home, env }), "mimocode"),
+    format: "mimo",
   }),
   defineClient({
     name: "grok_bot",
