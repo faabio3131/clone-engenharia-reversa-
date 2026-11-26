@@ -1,5 +1,9 @@
 import { z } from "zod";
 import {
+  macosPkgEntryMetadataSchema,
+  macosPkgMetadataSchema,
+} from "./formatMetadata/macosPkgMetadata.js";
+import {
   bunStandaloneEntryMetadataSchema,
   bunStandaloneMetadataSchema,
   denoStandaloneEntryMetadataSchema,
@@ -76,6 +80,8 @@ export const artifactFormatMetadataSchema = z.discriminatedUnion("kind", [
   uImageEntryMetadataSchema,
   androidOtaPayloadMetadataSchema,
   androidOtaPartitionMetadataSchema,
+  macosPkgMetadataSchema,
+  macosPkgEntryMetadataSchema,
   espImageMetadataSchema,
   espImageSegmentMetadataSchema,
   espImageSignatureBlockMetadataSchema,
@@ -254,6 +260,14 @@ const declarationsByKind: {
   "android-ota-partition": {
     notCompared:
       "name and index restate the entry's path; reconstructed partition bytes are compared by content when they are extractable.",
+  },
+  "macos-pkg": {
+    notCompared:
+      "Its fields come from the package's own bytes, which content comparison covers.",
+  },
+  "macos-pkg-entry": {
+    notCompared:
+      "role and layout restate the entry; stored bytes are compared by content.",
   },
   "esp-image": {
     notCompared:
