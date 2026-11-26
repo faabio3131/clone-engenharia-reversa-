@@ -6,6 +6,7 @@ import { jsonParts } from "../domain/jsonSerialization.js";
 import { decodeStrictUtf8 } from "../domain/strictUtf8.js";
 import {
   SQLITE_ROW_LIMIT_DEFAULT,
+  sqliteCatalogSpelling,
   sqliteSchemaHasObjectDeclaration,
   sqliteSchemaScope,
   type InspectSqliteDatabaseInput,
@@ -512,8 +513,12 @@ const readSchema = (
     );
   let selectedTable: SelectedTableFacts | undefined;
   const metadata = new Map<string, z.output<typeof tableRow>>();
+  // PRAGMA inventory lists the catalog under its canonical spelling only, so a recognized
+  // caller alias has to be resolved to it before the exact-name lookup.
   const selectedBytes =
-    selectedName === undefined ? undefined : sqliteNameBytes(db, selectedName);
+    selectedName === undefined
+      ? undefined
+      : sqliteNameBytes(db, sqliteCatalogSpelling(selectedName));
   const selectedKey =
     selectedBytes === undefined ? undefined : sqliteNameBytesKey(selectedBytes);
   const selectedIdentifierKey =
@@ -614,7 +619,9 @@ const readSchema = (
   // no self-row in its stored declaration table. Keep these row-source facts
   // separate from schema.tables rather than manufacturing a declaration.
   const inputTableBytes =
-    input.table === undefined ? undefined : sqliteNameBytes(db, input.table);
+    input.table === undefined
+      ? undefined
+      : sqliteNameBytes(db, sqliteCatalogSpelling(input.table));
   const inputTableKey =
     inputTableBytes === undefined
       ? undefined
