@@ -252,6 +252,8 @@ export interface ArtifactReader {
     | "godot-pck"
     | "unityfs"
     | "wxapkg"
+    | "axml"
+    | "arsc"
     | "tar"
     | "dds"
     | "glb"
