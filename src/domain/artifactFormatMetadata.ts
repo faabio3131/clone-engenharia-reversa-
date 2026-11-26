@@ -38,6 +38,8 @@ import {
 import {
   androidBootImageEntryMetadataSchema,
   androidBootImageMetadataSchema,
+  androidDtboEntryMetadataSchema,
+  androidDtboMetadataSchema,
   androidOtaPartitionMetadataSchema,
   androidOtaPayloadMetadataSchema,
   iso9660EntryMetadataSchema,
@@ -90,6 +92,8 @@ export const artifactFormatMetadataSchema = z.discriminatedUnion("kind", [
   fitImageMetadataSchema,
   androidBootImageMetadataSchema,
   androidBootImageEntryMetadataSchema,
+  androidDtboMetadataSchema,
+  androidDtboEntryMetadataSchema,
   iso9660MetadataSchema,
   iso9660EntryMetadataSchema,
   ddsMetadataSchema,
@@ -238,6 +242,14 @@ const declarationsByKind: {
   "android-boot-image-entry": {
     notCompared:
       "role and index restate the entry's path, compression is observed from its bytes, and load addresses, names and board IDs come from the image header or vendor ramdisk table, which the image's content comparison covers.",
+  },
+  "android-dtbo": {
+    notCompared:
+      "Its header facts come from the image's own bytes, which content comparison covers.",
+  },
+  "android-dtbo-entry": {
+    notCompared:
+      "index, offset, size, id, rev, flags, custom words, compression, and FDT magic observation come from the container's table and stored entry bytes, which container and entry content comparison cover.",
   },
   iso9660: {
     notCompared:
