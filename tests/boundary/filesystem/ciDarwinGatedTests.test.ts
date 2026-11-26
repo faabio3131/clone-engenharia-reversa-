@@ -12,6 +12,8 @@ import {
   workflowFixtureEnvironment,
   workflowGit,
 } from "../../support/workflowGit.js";
+import { isMacOsOnlyTestSource } from "../../../scripts/ci/darwin-gate-candidates.mjs";
+import { isDarwinGatedTestSource } from "../../../scripts/ci/darwin-gated-tests.mjs";
 
 const script = fileURLToPath(
   new URL("../../../scripts/ci/darwin-gated-tests.mjs", import.meta.url),
@@ -62,6 +64,27 @@ const discover = (directory: string) =>
     cwd: directory,
     env: workflowFixtureEnvironment(),
   });
+
+// A template platform literal is unknown to Apple discovery, so planning
+// must not call that module macOS-only. A quote literal is decided by both.
+it.for([
+  [
+    `it.skipIf(process.platform !== \`darwin\`)("runs", () => {});`,
+    { macOsOnly: false, darwinGated: false },
+  ],
+  [
+    `it.skipIf(process.platform !== "darwin")("runs", () => {});`,
+    { macOsOnly: true, darwinGated: true },
+  ],
+] as const)(
+  "classifies a direct platform gate for planning and Apple discovery: %j",
+  ([source, expected]) => {
+    expect({
+      macOsOnly: isMacOsOnlyTestSource(source),
+      darwinGated: isDarwinGatedTestSource(source),
+    }).toEqual(expected);
+  },
+);
 
 it("lists exactly the tracked tests that run on macOS but never on Linux", async () => {
   const directory = await fixtureRepository(

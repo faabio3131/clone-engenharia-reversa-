@@ -22,10 +22,15 @@ export const mayGateTestToDarwin = (source) =>
 // decide. Anything undecidable — an ungated registration, a computed gate,
 // a fixture call that could register tests — is not demonstrable, and the
 // portable selection keeps the module.
+//
+// Platform names in these gates are only " or ' literals. Apple discovery
+// evaluates a template literal as unknown, so a backtick name is not a gate
+// this check can demonstrate. PLATFORM_LITERAL still admits backticks: that
+// filter is a superset, and exact discovery parses only what it admits.
 const DARWIN_SKIP_GATE =
-  /^(?:describe|it|test)\.skipIf\(\s*\(?\s*(?:process\.platform\s*!==?\s*["'`]darwin["'`]|["'`]darwin["'`]\s*!==?\s*process\.platform|process\.platform\s*===?\s*["'`]linux["'`]|["'`]linux["'`]\s*===?\s*process\.platform)\s*\)?\s*\)\s*\(/u;
+  /^(?:describe|it|test)\.skipIf\(\s*\(?\s*(?:process\.platform\s*!==?\s*["']darwin["']|["']darwin["']\s*!==?\s*process\.platform|process\.platform\s*===?\s*["']linux["']|["']linux["']\s*===?\s*process\.platform)\s*\)?\s*\)\s*\(/u;
 const DARWIN_RUN_GATE =
-  /^(?:describe|it|test)\.runIf\(\s*\(?\s*(?:process\.platform\s*===?\s*["'`]darwin["'`]|["'`]darwin["'`]\s*===?\s*process\.platform|process\.platform\s*!==?\s*["'`]linux["'`]|["'`]linux["'`]\s*!==?\s*process\.platform)\s*\)?\s*\)\s*\(/u;
+  /^(?:describe|it|test)\.runIf\(\s*\(?\s*(?:process\.platform\s*===?\s*["']darwin["']|["']darwin["']\s*===?\s*process\.platform|process\.platform\s*!==?\s*["']linux["']|["']linux["']\s*!==?\s*process\.platform)\s*\)?\s*\)\s*\(/u;
 const REGISTRATION = /^(?:describe|it|test)(?:\.\w+)*\s*\(/u;
 const TOP_LEVEL_CALL = /^([A-Za-z_$][\w$]*)(?:\.(\w+))?\s*\(/u;
 const HOOKS = new Set(["beforeAll", "beforeEach", "afterAll", "afterEach"]);
